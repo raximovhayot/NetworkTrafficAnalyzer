@@ -7,11 +7,15 @@ import org.pcap4j.packet.IpV4Packet;
 import org.pcap4j.packet.Packet;
 import org.pcap4j.packet.TcpPacket;
 import org.pcap4j.packet.UdpPacket;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.net.InetAddress;
 import java.util.concurrent.*;
 
 public class PacketSniffer {
+    private static final Logger log = LoggerFactory.getLogger(PacketSniffer.class);
+
     private static final int THREAD_POOL_SIZE = 4;
     private static final long FLOW_TIMEOUT = 60_000;
 
@@ -80,7 +84,7 @@ public class PacketSniffer {
             });
 
         } catch (Exception e) {
-            System.err.println("Error processing packet: " + e.getMessage());
+            log.error("Error processing packet: {}", e.getMessage());
         }
     }
 

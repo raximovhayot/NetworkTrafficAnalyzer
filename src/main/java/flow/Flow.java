@@ -224,7 +224,7 @@ public class Flow {
         float durationSeconds = durationMillis / 1000.0f;
         features.flowBytesPerS = (double) (features.fwdPacketsLengthTotal + features.bwdPacketsLengthTotal) / durationSeconds;
         features.flowPacketsPerS = (double) (totalFwdPackets.get() + totalBwdPackets.get()) / durationSeconds;
-        features.bwdPacketsPerS = (float) (totalBwdPackets.get() / durationSeconds);
+        features.bwdPacketsPerS = totalBwdPackets.get() / durationSeconds;
 
         // Packet length stats
         features.packetLengthMax = Math.max(features.fwdPacketLengthMax, features.bwdPacketLengthMax);
