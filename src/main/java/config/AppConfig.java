@@ -42,9 +42,13 @@ public class AppConfig {
     }
 
     private void loadProperties() {
-        try (InputStream input = new FileInputStream(CONFIG_FILE)) {
-            properties.load(input);
-            log.info("Loaded configuration from {}", CONFIG_FILE);
+        try (InputStream input = getClass().getClassLoader().getResourceAsStream(CONFIG_FILE)) {
+            if (input != null) {
+                properties.load(input);
+                log.info("Loaded configuration from classpath resource: {}", CONFIG_FILE);
+            } else {
+                log.warn("Could not find configuration file {} in classpath. Using default values.", CONFIG_FILE);
+            }
         } catch (IOException e) {
             log.warn("Could not load configuration file {}. Using default values.", CONFIG_FILE);
         }
