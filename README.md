@@ -43,6 +43,10 @@ Translation:
    mvn clean package
    ```
 
+   This will create two JAR files in the target directory:
+   - `NetworkTraffiicAnalyzer-1.0-SNAPSHOT.jar`: The main JAR file (without dependencies)
+   - `NetworkTraffiicAnalyzer-1.0-SNAPSHOT-jar-with-dependencies.jar`: A fat JAR with all dependencies included
+
 ## Configuration
 
 The application can be configured using the `application.properties` file:
@@ -75,6 +79,8 @@ Run the application with:
 ```
 java -jar target/NetworkTraffiicAnalyzer-1.0-SNAPSHOT-jar-with-dependencies.jar
 ```
+
+Note: Use the jar-with-dependencies version as it includes all required libraries.
 
 The application will:
 1. Capture packets from the configured network interface
