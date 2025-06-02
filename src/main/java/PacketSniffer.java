@@ -45,7 +45,7 @@ public class PacketSniffer {
                     log.error("No network interfaces found");
                     return;
                 }
-                nif = devices.get(0);
+                nif = devices.getFirst();
                 log.info("Using first available network interface: {}", nif.getName());
             } else {
                 // Use the specified interface
@@ -62,11 +62,10 @@ public class PacketSniffer {
             }
 
             // Create packet capture handle
-            try (PcapHandle handle = nif.openLive(65536, PcapNetworkInterface.PromiscuousMode.PROMISCUOUS, 50)) {
+            try (PcapHandle handle = nif.openLive(65536, PcapNetworkInterface.PromiscuousMode.PROMISCUOUS, 50); ScheduledExecutorService cleaner = Executors.newSingleThreadScheduledExecutor()) {
                 handle.setFilter("ip", BpfProgram.BpfCompileMode.OPTIMIZE);
 
                 // Create scheduled task for cleaning up inactive flows
-                ScheduledExecutorService cleaner = Executors.newSingleThreadScheduledExecutor();
                 cleaner.scheduleAtFixedRate(() -> cleanupFlows(flows), 10, 10, TimeUnit.SECONDS);
 
                 log.info("Starting packet capture on interface {}", nif.getName());
