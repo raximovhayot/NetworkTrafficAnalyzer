@@ -53,11 +53,11 @@ The application can be configured using the `application.properties` file:
 
 ```properties
 # Network interface to capture packets from
-# Use 'any' to capture from all interfaces, or specify a particular interface name
-network.interface=wlp4s0
+# Use 'any' to capture from the first available interface, or specify a particular interface name
+network.interface=any
 
 # API endpoint to send flow features to
-api.url=http://localhost:8080/api/flows
+api.url=http://localhost:5000/api/network-data
 
 # Thread pool size for packet processing
 thread.pool.size=4

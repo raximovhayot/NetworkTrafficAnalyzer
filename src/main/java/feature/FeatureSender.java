@@ -65,6 +65,8 @@ public class FeatureSender {
 
         try {
             String jsonPayload = mapper.writeValueAsString(flow.getFeatures());
+            log.info("Sending features to {}", apiUrl);
+            log.info("jsonPayload: {}", jsonPayload);
             post.setEntity(new StringEntity(jsonPayload));
 
             // Initial attempt

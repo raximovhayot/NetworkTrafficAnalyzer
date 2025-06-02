@@ -18,11 +18,11 @@ public class AppConfig {
     private static AppConfig instance;
 
     // Default values
-    private static final String DEFAULT_NETWORK_INTERFACE = "wlp4s0";
+    private static final String DEFAULT_NETWORK_INTERFACE = "any";
     private static final String DEFAULT_API_URL = "http://localhost:8080/api/flows";
-    private static final int DEFAULT_THREAD_POOL_SIZE = 4;
+    private static final int DEFAULT_THREAD_POOL_SIZE = 30;
     private static final long DEFAULT_FLOW_TIMEOUT = 60_000;
-    private static final int DEFAULT_HTTP_TIMEOUT = 5000;
+    private static final int DEFAULT_HTTP_TIMEOUT = 60_000;
     private static final int DEFAULT_HTTP_RETRY_COUNT = 3;
 
     private AppConfig() {
