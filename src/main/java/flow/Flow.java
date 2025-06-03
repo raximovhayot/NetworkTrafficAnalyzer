@@ -193,6 +193,10 @@ public class Flow {
 
         // Basic features
         features.protocol = (byte) protocol;
+        features.sourceIp = srcIp != null ? srcIp.getHostAddress() : "";
+        features.destinationIp = dstIp != null ? dstIp.getHostAddress() : "";
+        features.sourcePort = srcPort;
+        features.destinationPort = dstPort;
         features.flowDuration = (int) (durationMillis * 1000);
         features.totalFwdPackets = totalFwdPackets.get();
         features.totalBackwardPackets = (short) totalBwdPackets.get();

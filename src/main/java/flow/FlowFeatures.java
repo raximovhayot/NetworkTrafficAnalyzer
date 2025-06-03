@@ -17,6 +17,18 @@ public class FlowFeatures implements Serializable {
     @JsonProperty("protocol")
     public byte protocol;
 
+    @JsonProperty("source_ip")
+    public String sourceIp;
+
+    @JsonProperty("destination_ip")
+    public String destinationIp;
+
+    @JsonProperty("source_port")
+    public int sourcePort;
+
+    @JsonProperty("destination_port")
+    public int destinationPort;
+
     @JsonProperty("flow_duration")
     public int flowDuration;
 
@@ -138,6 +150,10 @@ public class FlowFeatures implements Serializable {
     public String toString() {
         return "FlowFeatures{" +
                 "protocol=" + protocol +
+                ", sourceIp='" + sourceIp + '\'' +
+                ", destinationIp='" + destinationIp + '\'' +
+                ", sourcePort=" + sourcePort +
+                ", destinationPort=" + destinationPort +
                 ", flowDuration=" + flowDuration +
                 ", totalFwdPackets=" + totalFwdPackets +
                 ", totalBackwardPackets=" + totalBackwardPackets +
@@ -157,6 +173,8 @@ public class FlowFeatures implements Serializable {
         if (o == null || getClass() != o.getClass()) return false;
         FlowFeatures that = (FlowFeatures) o;
         return protocol == that.protocol &&
+                sourcePort == that.sourcePort &&
+                destinationPort == that.destinationPort &&
                 flowDuration == that.flowDuration &&
                 totalFwdPackets == that.totalFwdPackets &&
                 totalBackwardPackets == that.totalBackwardPackets &&
@@ -166,12 +184,15 @@ public class FlowFeatures implements Serializable {
                 Double.compare(that.flowPacketsPerS, flowPacketsPerS) == 0 &&
                 synFlagCount == that.synFlagCount &&
                 ackFlagCount == that.ackFlagCount &&
-                urgFlagCount == that.urgFlagCount;
+                urgFlagCount == that.urgFlagCount &&
+                Objects.equals(sourceIp, that.sourceIp) &&
+                Objects.equals(destinationIp, that.destinationIp);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(protocol, flowDuration, totalFwdPackets, totalBackwardPackets,
+        return Objects.hash(protocol, sourceIp, destinationIp, sourcePort, destinationPort,
+                flowDuration, totalFwdPackets, totalBackwardPackets,
                 fwdPacketsLengthTotal, bwdPacketsLengthTotal, flowBytesPerS, flowPacketsPerS,
                 synFlagCount, ackFlagCount, urgFlagCount);
     }

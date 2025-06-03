@@ -2,6 +2,7 @@ package api;
 
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
+import config.AppConfig;
 import feature.FeatureSender;
 import flow.Flow;
 import flow.FlowFeatures;
@@ -22,10 +23,9 @@ import org.slf4j.LoggerFactory;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Paths;
-import java.nio.file.StandardCopyOption;
 import java.util.UUID;
+import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Handler for file upload requests.
@@ -126,7 +126,7 @@ public class FileUploadHandler implements HttpHandler {
                 if (inHeader) {
                     // Still reading headers
                     headerBytes.write(buffer, 0, bytesRead);
-                    String header = headerBytes.toString(StandardCharsets.UTF_8.name());
+                    String header = headerBytes.toString(StandardCharsets.UTF_8);
 
                     // Check if we've reached the end of headers (empty line)
                     int headerEnd = header.indexOf("\r\n\r\n");
@@ -141,7 +141,6 @@ public class FileUploadHandler implements HttpHandler {
                         // Create output file with unique name
                         uniqueFileName = UUID.randomUUID().toString() + "_" + fileName;
                         outputFile = new File(UPLOAD_DIR, uniqueFileName);
-                        fileName = uniqueFileName; // Return the unique filename instead of the original
                         fileOutputStream = new FileOutputStream(outputFile);
 
                         // Write remaining data after headers to file
@@ -255,13 +254,13 @@ public class FileUploadHandler implements HttpHandler {
     }
 
     /**
-     * Process a parquet file and send flows to the second application
+     * Process a parquet file and send flows to the second application in parallel
      * @param parquetFile the parquet file to process
      * @return the number of flows processed
      */
     private int processParquetFile(File parquetFile) throws IOException {
         log.info("Processing parquet file: {}", parquetFile.getAbsolutePath());
-        int flowCount = 0;
+        AtomicInteger flowCount = new AtomicInteger(0);
 
         try {
             // Create Hadoop configuration
@@ -275,46 +274,65 @@ public class FileUploadHandler implements HttpHandler {
             MessageType schema = reader.getFooter().getFileMetaData().getSchema();
             log.info("Parquet schema: {}", schema);
 
-            // Read the file
-            PageReadStore pages;
-            while ((pages = reader.readNextRowGroup()) != null) {
-                long rows = pages.getRowCount();
-                log.info("Reading {} rows", rows);
+            // Create thread pool for parallel processing
+            int threadPoolSize = AppConfig.getInstance().getThreadPoolSize();
+            ExecutorService executor = Executors.newFixedThreadPool(threadPoolSize);
+            log.info("Created thread pool with {} threads for parallel flow processing", threadPoolSize);
 
-                // Create a record reader
-                MessageColumnIO columnIO = new ColumnIOFactory().getColumnIO(schema);
-                RecordReader<Group> recordReader = columnIO.getRecordReader(
-                        pages, new GroupRecordConverter(schema));
+            try {
+                // Read the file
+                PageReadStore pages;
+                while ((pages = reader.readNextRowGroup()) != null) {
+                    long rows = pages.getRowCount();
+                    log.info("Reading {} rows", rows);
 
-                // Process each row
-                for (int i = 0; i < rows; i++) {
-                    Group group = recordReader.read();
+                    // Create a record reader
+                    MessageColumnIO columnIO = new ColumnIOFactory().getColumnIO(schema);
+                    RecordReader<Group> recordReader = columnIO.getRecordReader(
+                            pages, new GroupRecordConverter(schema));
 
-                    // Create a FlowFeatures object from the parquet data
-                    FlowFeatures features = createFlowFeaturesFromGroup(group);
+                    // Process each row in parallel without waiting for responses
+                    for (int i = 0; i < rows; i++) {
+                        Group group = recordReader.read();
 
-                    // Create a ParquetFlow with the features
-                    Flow flow = new ParquetFlow(features);
+                        // Submit task to thread pool and don't wait for response
+                        executor.submit(() -> {
+                            try {
+                                // Create a FlowFeatures object from the parquet data
+                                FlowFeatures features = createFlowFeaturesFromGroup(group);
 
-                    // Send the flow to the second application
-                    boolean success = FeatureSender.sendFeatures(flow);
-                    if (success) {
-                        flowCount++;
-                    } else {
-                        log.warn("Failed to send flow {}", flowCount + 1);
+                                // Create a ParquetFlow with the features
+                                Flow flow = new ParquetFlow(features);
+
+                                // Send the flow to the second application without waiting for response
+                                FeatureSender.sendFeatures(flow);
+
+                                // Increment count of submitted flows
+                                flowCount.incrementAndGet();
+                            } catch (Exception e) {
+                                log.error("Error processing flow: {}", e.getMessage(), e);
+                            }
+                        });
                     }
+
+                    // Log the number of flows submitted for processing
+                    log.info("Submitted {} flows for processing", rows);
                 }
+            } finally {
+                // Shutdown the executor without waiting for tasks to complete
+                executor.shutdownNow();
+                log.info("Executor shutdown initiated - not waiting for tasks to complete");
             }
 
             reader.close();
-            log.info("Successfully processed {} flows", flowCount);
+            log.info("Submitted {} flows for processing", flowCount.get());
 
         } catch (Exception e) {
             log.error("Error processing parquet file: {}", e.getMessage(), e);
             throw new IOException("Error processing parquet file: " + e.getMessage(), e);
         }
 
-        return flowCount;
+        return flowCount.get();
     }
 
     /**
